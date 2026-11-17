@@ -1,0 +1,10 @@
+{
+  "networks": [
+    {
+      "name": "mint_verifier_network"
+    }
+  ],
+  "actions": {
+    "version": 1
+  }
+}

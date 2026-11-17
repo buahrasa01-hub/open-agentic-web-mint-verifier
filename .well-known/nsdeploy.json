@@ -1,0 +1,18 @@
+{
+  "exports": [
+    {
+      "aliases": [
+        "mint_verifier_network",
+        "mint_verifier"
+      ],
+      "front_man": "mint_verifier",
+      "network": "mint_verifier_network",
+      "url": "mint_verifier_network"
+    }
+  ],
+  "imports": [],
+  "link_updates": {
+    "mode": "browser-local"
+  },
+  "protocol": "nsdeploy-link/v1"
+}

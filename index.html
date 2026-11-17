@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mint Verifier — check a BSC contract before you mint</title>
+  <meta name="description" content="Paste a BNB Smart Chain contract address. Mint Verifier reads its public on-chain facts and returns a plain verdict — before you mint, buy, or send anything.">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="assistant.css">
+  <script type="module" src="script.js"></script>
+  <script type="module" src="site.js"></script>
+</head>
+<body>
+  <header>
+    <h1>Mint Verifier</h1>
+    <p>Check a BSC contract <strong>before</strong> you mint, buy, or send anything. Paste a contract address — the page reads its public on-chain facts and gives a plain verdict.</p>
+  </header>
+
+  <main>
+    <section aria-labelledby="verify-heading">
+      <h2 id="verify-heading">Verify a contract</h2>
+      <form id="verify-form">
+        <label for="contract-address">BSC contract address</label>
+        <input id="contract-address" name="address" type="text" inputmode="text"
+          placeholder="0x…" autocomplete="off" spellcheck="false" required>
+        <button type="submit">Verify</button>
+        <button type="button" id="clear-result">Clear</button>
+      </form>
+      <p id="verify-status" role="status"></p>
+      <div id="result" hidden></div>
+      <p class="muted">Try it: <code>0x10b80088fDAf9363d83671BE66b64f231f9e92f6</code> is a real token contract. <code>0x0000000000000000000000000000000000000000</code> is not a contract at all.</p>
+    </section>
+
+    <section aria-labelledby="how-heading">
+      <h2 id="how-heading">What it checks</h2>
+      <ul>
+        <li>Whether any contract code exists at the address.</li>
+        <li>Token metadata: name, symbol, decimals, total supply.</li>
+        <li>Whether one owner address controls the contract.</li>
+        <li>Whether the contract is paused, and its max supply.</li>
+        <li>Whether mint-like functions are likely present (found in the deployed bytecode).</li>
+      </ul>
+      <h3>What it cannot do</h3>
+      <ul>
+        <li>It cannot mint, buy, or send anything — there is no wallet here, and nothing is signed.</li>
+        <li>It cannot read off-chain promises, audit reports, or unverified source code.</li>
+        <li>It cannot guarantee safety. A contract can pass every public check and still be dangerous.</li>
+        <li>It only reads BNB Smart Chain (chain id 56).</li>
+      </ul>
+      <p class="muted">All checks run in your browser against the public BSC endpoint <code>https://bsc-dataseed1.binance.org</code>. No address you enter is sent anywhere else.</p>
+    </section>
+
+    <section id="assistant" class="assistant" aria-labelledby="assistant-heading">
+      <h2 id="assistant-heading">Ask Mint Verifier</h2>
+      <p>Ask the assistant to verify a contract address, or explain what a result means.</p>
+      <p class="assistant-note">Your messages and this page's data go to the LLM provider you choose in the settings below. You confirm anything that cannot be undone before it happens.</p>
+      <p id="assistant-status" role="status">Connecting the assistant… If this message stays, the assistant could not load. You can still use the page directly.</p>
+      <div id="agent-app">
+        <div data-ns-slot="header"></div>
+        <div class="assistant-panels">
+          <div data-ns-slot="chat"></div>
+          <div data-ns-slot="agents"></div>
+        </div>
+        <div data-ns-slot="settings"></div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p class="muted">Mint Verifier is an open agentic website: its agent network is public at <a href="agent-manifest.json">agent-manifest.json</a>. Other agent sites may call it; it calls no other site.</p>
+  </footer>
+</body>
+</html>
