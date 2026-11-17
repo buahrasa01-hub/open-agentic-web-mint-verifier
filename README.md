@@ -21,18 +21,27 @@ Then open http://127.0.0.1:8080/. The Verify button works with no key at all. Th
   ```
   This writes `mint_verifier_network.network.json` (the published, resolved network) plus the discovery files. Never edit the generated files by hand.
 - `agent-manifest.json` — the public index of the site's networks, router, and peer policy.
-- `links.json` — the peer-network link map (empty: this site calls no other site).
+- `links.json` — the peer-network link map (no link slots; the partner is called by its exact URL, not a slot).
 - `site-actions.js` — the two read-only site actions the agents can call: `website_get_site_state` and `website_verify_contract`.
 - `site.js` — mounts the assistant in the page.
 - `runtime/` — the browser runtime (nsDeploy runtime as shipped by the spec's agentify-website skill, unchanged).
-- `tests/` — Node tests for the verdict logic and the site actions.
+- `tests/` — Node tests: the verdict logic and site actions (`mint-verifier.test.mjs`), the shared stubbed BSC RPC (`bsc_stub.mjs`), and the full template integration suite with a scripted model (`agentified.test.mjs`, incl. partner-tool and consent tests).
 
 ## Network
 
-- Front agent `mint_verifier`: owns the two website tools, delegates reading to `contract_reader` and the plain verdict to `verdict_writer`.
+- Front agent `mint_verifier`: owns the two website tools, delegates reading to `contract_reader` and the plain verdict to `verdict_writer`. It can also ask the linked Tidewhistle Guesthouse network (see below).
 - `contract_reader`: calls `website_verify_contract` for one address and returns the facts as plain text.
 - `verdict_writer`: turns facts into the short plain-language verdict. It never says a contract is safe.
-- Network URL (once hosted): the folder holding `agent-manifest.json`, then the network name `mint_verifier_network`.
+- Network URL: https://buahrasa01-hub.github.io/open-agentic-web-mint-verifier/mint_verifier_network (folder holding `agent-manifest.json`, then the network name). Live site: https://buahrasa01-hub.github.io/open-agentic-web-mint-verifier/
+
+## Linked site
+
+The assistant can ask the **Tidewhistle Guesthouse** demo network what it offers:
+
+- Partner network URL: https://mint-verifier-guesthouse-partner-buahrasa01.vercel.app/tidewhistle_guesthouse (the spec's own guesthouse example, deployed as a static site on Vercel with `Access-Control-Allow-Origin: *`; its own agent-manifest and bridge are public there).
+- The consent card shows "Tidewhistle Guesthouse", its host, and the first 140 characters of the request, before anything is sent. **Always allow** skips the card for that host until the page is reloaded.
+- A request is one short question, such as "What do you offer, and how do I book?" The assistant is told never to put names, emails, phone numbers or booking codes in it, though the runtime does not filter it, so the visitor checks it on the card.
+- The partner's network runs in this browser on the visitor's key, with none of the partner's site tools, so it cannot give live availability or prices — only what its instructions say it offers and how to book — and a call costs more than the card's token estimate. The guesthouse network itself links a harbor-tours demo on `localhost:8081`, which is not served: allowing that nested call fails fast and the guesthouse agent still answers from its instructions.
 
 ## What it cannot do
 
