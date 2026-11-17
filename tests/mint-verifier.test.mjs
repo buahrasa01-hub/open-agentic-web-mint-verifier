@@ -10,7 +10,6 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 import {
   App,
-  Bsc,
   buildVerdict,
   decodeAbiString,
   decodeAddress,
@@ -21,66 +20,18 @@ import {
 } from "../script.js";
 import { registerActions } from "../site-actions.js";
 import { AgentNetwork, validateNetwork } from "../runtime/kernel.js";
+import {
+  OWNER,
+  PLAIN_CONTRACT,
+  TOKEN,
+  ZERO,
+  encodeAddress,
+  encodeString,
+  encodeUint,
+  installBscStub,
+} from "./bsc_stub.mjs";
 
-const TOKEN = "0x10b80088fDAf9363d83671BE66b64f231f9e92f6";
-const ZERO = "0x0000000000000000000000000000000000000000";
-const PLAIN_CONTRACT = "0x1111111111111111111111111111111111111111";
-const OWNER = "0x8c0300e6df2b154c0de05f5f2f3b1de16e20aca1";
-
-// --- ABI encoding helpers for the stubbed RPC -------------------------------
-
-function encodeUint(value) {
-  return "0x" + BigInt(value).toString(16).padStart(64, "0");
-}
-
-function encodeString(text) {
-  const bytes = new TextEncoder().encode(text);
-  const length = encodeUint(bytes.length).slice(2);
-  let data = "";
-  for (const byte of bytes) data += byte.toString(16).padStart(2, "0");
-  data = data.padEnd(Math.ceil(data.length / 64) * 64, "0");
-  return "0x" + encodeUint(32).slice(2) + length + data;
-}
-
-function encodeAddress(address) {
-  return "0x" + "00".repeat(12) + address.slice(2).toLowerCase();
-}
-
-/** Stubbed BSC RPC: answers from fixed data, never touches the real network. */
-function stubFetch(url, options) {
-  const { method, params } = JSON.parse(options.body);
-  let result = "0x";
-  if (method === "eth_getCode") {
-    const address = params[0].toLowerCase();
-    if (address === TOKEN.toLowerCase()) {
-      // Fake runtime bytecode that contains the mint(address,uint256) selector.
-      result = "0x608060405234801561001057600080fd5b5040c10f19600080fd5b50";
-    } else if (address === PLAIN_CONTRACT.toLowerCase()) {
-      result = "0x608060405234801561001057600080fd5b50";
-    } else {
-      result = "0x";
-    }
-  } else if (method === "eth_call") {
-    const call = params[0];
-    const to = call.to.toLowerCase();
-    const data = call.data;
-    if (to === TOKEN.toLowerCase()) {
-      if (data === "0x06fdde03") result = encodeString("PACTURE");
-      else if (data === "0x95d89b41") result = encodeString("PACTURE");
-      else if (data === "0x313ce567") result = encodeUint(18);
-      else if (data === "0x18160ddd") result = encodeUint(10n ** 24n);
-      else if (data === "0x8da5cb5b") result = encodeAddress(OWNER);
-      else if (data === "0x5c975abb") result = encodeUint(0);
-      else if (data === "0xd5abeb01") throw new Error("execution reverted");
-    }
-    // Any other eth_call returns "0x" (empty): the decoder treats it as absent.
-  }
-  return Promise.resolve({
-    json: () => Promise.resolve({ jsonrpc: "2.0", id: 1, result }),
-  });
-}
-
-Bsc.setFetch(stubFetch);
+installBscStub();
 
 // --- Pure decoding and verdict logic ----------------------------------------
 
@@ -191,6 +142,11 @@ test("verifyContract: token address returns facts, flags, and updates state", as
   assert.equal(verdict.facts.paused, false);
   assert.deepEqual(verdict.facts.mintFunctions, ["mint(address,uint256)"]);
   assert.equal(verdict.facts.maxSupply, null);
+  // The verdict crosses the runtime as JSON, which cannot hold a BigInt: the
+  // supplies must come back as decimal strings.
+  assert.equal(typeof verdict.facts.totalSupply, "string");
+  assert.equal(verdict.facts.totalSupply, (10n ** 24n).toString());
+  assert.doesNotThrow(() => JSON.stringify(verdict));
   const state = App.page.getState();
   assert.equal(state.address, TOKEN);
   assert.equal(state.verdict.level, "facts");
@@ -243,7 +199,9 @@ test("manifest lists the network and the runtime validator accepts it", async ()
   assert.equal(manifest.networks[0].front_man, "mint_verifier");
   assert.equal(manifest.networks[0].hocon, "./mint_verifier_network.network.json");
   assert.equal(manifest.peer_policy.mode, "closed");
-  assert.deepEqual(manifest.allowed_peers, []);
+  assert.deepEqual(manifest.allowed_peers, [
+    "https://mint-verifier-guesthouse-partner-buahrasa01.vercel.app",
+  ]);
   assert.equal(manifest.llm_router.mock, false);
 
   const networkJson = JSON.parse(
@@ -254,7 +212,11 @@ test("manifest lists the network and the runtime validator accepts it", async ()
   assert.deepEqual(errors, []);
   const names = network.config.tools.map((t) => t.name);
   assert.deepEqual(names, ["mint_verifier", "contract_reader", "verdict_writer"]);
-  assert.deepEqual(network.config.tools[0].tools, ["contract_reader", "verdict_writer"]);
+  assert.deepEqual(network.config.tools[0].tools, [
+    "contract_reader",
+    "verdict_writer",
+    "https://mint-verifier-guesthouse-partner-buahrasa01.vercel.app/tidewhistle_guesthouse",
+  ]);
 });
 
 test("links.json declares the network with no peers", async () => {

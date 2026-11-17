@@ -152,6 +152,21 @@ export const Bsc = {
 // Verdict logic — pure given the facts object, so it is easy to test.
 // ---------------------------------------------------------------------------
 export function buildVerdict(address, facts) {
+  // Tool results are serialized as JSON, which cannot hold a BigInt: hand the
+  // verdict back with supplies as decimal strings. The page renders
+  // totalSupplyText, so nothing it shows changes.
+  const safeFacts = {
+    ...facts,
+    totalSupply:
+      facts.totalSupply === null || facts.totalSupply === undefined
+        ? null
+        : String(facts.totalSupply),
+    maxSupply:
+      facts.maxSupply === null || facts.maxSupply === undefined
+        ? null
+        : String(facts.maxSupply),
+    mintFunctions: facts.mintFunctions,
+  };
   const flags = [];
   if (facts.owner) {
     flags.push(`Has an owner: one address (${facts.owner}) can change the contract.`);
@@ -174,7 +189,7 @@ export function buildVerdict(address, facts) {
       isContract: false,
       isToken: false,
       flags,
-      facts: { ...facts, mintFunctions: facts.mintFunctions },
+      facts: safeFacts,
       checkedAt: new Date().toISOString(),
     };
   }
@@ -189,7 +204,7 @@ export function buildVerdict(address, facts) {
       isContract: true,
       isToken: false,
       flags,
-      facts: { ...facts, mintFunctions: facts.mintFunctions },
+      facts: safeFacts,
       checkedAt: new Date().toISOString(),
     };
   }
@@ -213,9 +228,8 @@ export function buildVerdict(address, facts) {
     isToken: true,
     flags,
     facts: {
-      ...facts,
+      ...safeFacts,
       totalSupplyText: supplyText,
-      mintFunctions: facts.mintFunctions,
     },
     checkedAt: new Date().toISOString(),
   };
@@ -247,6 +261,10 @@ class MintVerifierPage {
       supportedChecks: [...this.supportedChecks],
       chain: "BNB Smart Chain (chain id 56)",
       rpc: BSC_RPC_URL,
+      partner: {
+        name: "Tidewhistle Guesthouse",
+        url: "https://mint-verifier-guesthouse-partner-buahrasa01.vercel.app/",
+      },
     };
   }
 

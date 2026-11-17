@@ -15,7 +15,7 @@ export class AssistantMount {
    * The first chat message once the visitor has a key: what the assistant can do here.
    */
   static GREETING =
-    "I can verify a BSC contract address for you and explain what the result means. Paste an address, or ask me what I checked last.";
+    "I can verify a BSC contract address for you and explain what the result means. Paste an address, or ask me what I checked last. I can also ask the Tidewhistle Guesthouse what it offers.";
 
   /**
    * The confirmation dialog's words for each irreversible action. This site has none.
